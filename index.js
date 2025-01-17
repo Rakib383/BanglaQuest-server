@@ -26,6 +26,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     const packageCollection = client.db("BanglaQuest").collection("allPackages")
+    const storyCollection = client.db("BanglaQuest").collection("stories")
 
 
     app.get('/packages',async (req,res) => {
@@ -41,6 +42,15 @@ async function run() {
         const result = await packageCollection.findOne(query)
         res.send(result)
 
+    })
+
+    app.get('/stories',async (req,res) => {
+        const result = await storyCollection.find().limit(4).toArray()
+        res.send(result)
+    })
+    app.get('/allStories',async (req,res) => {
+        const result = await storyCollection.find().toArray()
+        res.send(result)
     })
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
