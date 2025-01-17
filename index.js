@@ -62,6 +62,13 @@ async function run() {
         const result = await tourGuideCollection.find().toArray()
         res.send(result)
     })
+
+    app.get('/tourGuides/:id',async (req,res) => {
+        const {id} = req.params
+        const query = {_id:new ObjectId(id)}
+        const result = await tourGuideCollection.findOne(query)
+        res.send(result)
+    })
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
 
