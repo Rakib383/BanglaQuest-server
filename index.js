@@ -27,6 +27,7 @@ async function run() {
     await client.connect();
     const packageCollection = client.db("BanglaQuest").collection("allPackages")
     const storyCollection = client.db("BanglaQuest").collection("stories")
+    const tourGuideCollection = client.db("BanglaQuest").collection("tourGuides")
 
 
     app.get('/packages',async (req,res) => {
@@ -54,6 +55,11 @@ async function run() {
     })
     app.get('/allStories',async (req,res) => {
         const result = await storyCollection.find().toArray()
+        res.send(result)
+    })
+
+    app.get('/tourGuides',async (req,res) => {
+        const result = await tourGuideCollection.find().toArray()
         res.send(result)
     })
     // Send a ping to confirm a successful connection
