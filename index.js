@@ -30,13 +30,17 @@ async function run() {
 
 
     app.get('/packages',async (req,res) => {
+        const result = await packageCollection.find().limit(3).toArray()
+        res.send(result)
+    })
+    app.get('/allPackages',async (req,res) => {
         const result = await packageCollection.find().toArray()
 
         res.send(result)
     })
 
 
-    app.get('/packages/:id',async (req,res) => {
+    app.get('/allPackages/:id',async (req,res) => {
         const id = req.params
         const query = {_id:new ObjectId(id)}
         const result = await packageCollection.findOne(query)
