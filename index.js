@@ -7,7 +7,7 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(cors());
 app.use(express.json());
-
+var jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri =
   `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster1.25zkwku.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1`;
@@ -28,7 +28,15 @@ async function run() {
     const packageCollection = client.db("BanglaQuest").collection("allPackages")
     const storyCollection = client.db("BanglaQuest").collection("stories")
     const tourGuideCollection = client.db("BanglaQuest").collection("tourGuides")
+    const userCollection = client.db("BanglaQuest").collection("users")
 
+
+    // jwt related api
+    app.post('/jwt',async (req,res) => {
+      const user = req.body
+      const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:"12h"})
+      res.send({token})
+    })
 
     app.get('/packages',async (req,res) => {
         const result = await packageCollection.find().limit(3).toArray()
@@ -68,6 +76,17 @@ async function run() {
         const query = {_id:new ObjectId(id)}
         const result = await tourGuideCollection.findOne(query)
         res.send(result)
+    })
+
+    // User's api
+    app.post('/users',async (req,res) => {
+      const userInfo = req.body
+      const existingUser = await userCollection.findOne({email:userInfo.email})
+      if(existingUser) {
+        return res.send({message:"user already exist"})
+      }
+      const result = await userCollection.insertOne(userInfo)
+      res.send(result)
     })
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
