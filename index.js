@@ -116,6 +116,14 @@ async function run() {
     });
 
     // User's api
+    app.get('/users/:email',verifyToken,async (req,res) => {
+      const {email} =req.params
+      const result = await userCollection.findOne({email})
+     
+      res.send(result)
+    })
+
+    
     app.post("/users", async (req, res) => {
       const userInfo = req.body;
       const existingUser = await userCollection.findOne({
@@ -127,6 +135,14 @@ async function run() {
       const result = await userCollection.insertOne(userInfo);
       res.send(result);
     });
+
+    app.patch('/users/:id',async (req,res) => {
+      const {id} = req.params
+      const query = {_id:new ObjectId(id)}
+      const updatedInfo = req.body
+      const result = await userCollection.updateOne(query,{$set:updatedInfo})
+      res.send(result)
+    })
 
     // Bookings
     app.post('/bookings',verifyToken,async (req,res) => {
