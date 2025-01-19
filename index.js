@@ -145,11 +145,17 @@ async function run() {
     })
 
     // Bookings
+
+    app.get('/bookings',async (req,res) => {
+      const result = await bookingCollection.find().toArray()
+      res.send(result)
+    })
     app.post('/bookings',verifyToken,async (req,res) => {
       const bookingsInfo = req.body
       const result = await bookingCollection.insertOne(bookingsInfo)
       res.send(result)
     })
+
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
 
