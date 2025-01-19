@@ -23,7 +23,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     const packageCollection = client
       .db("BanglaQuest")
       .collection("allPackages");
@@ -33,7 +33,9 @@ async function run() {
       .collection("tourGuides");
     const userCollection = client.db("BanglaQuest").collection("users");
     const bookingCollection = client.db("BanglaQuest").collection("bookings");
-    const tourGuideApplications = client.db("BanglaQuest").collection("tourGuideApplications");
+    const tourGuideApplications = client
+      .db("BanglaQuest")
+      .collection("tourGuideApplications");
 
     // jwt related api
     app.post("/jwt", async (req, res) => {
@@ -45,21 +47,20 @@ async function run() {
     });
 
     // middlewares
-    const verifyToken = (req,res,next) => {
-      if(!req.headers.authorization) {
+    const verifyToken = (req, res, next) => {
+      if (!req.headers.authorization) {
         return res.status(401).send({ message: "unauthorize access" });
       }
-      const token = req.headers.authorization.split(" ")[1]
+      const token = req.headers.authorization.split(" ")[1];
 
-      jwt.verify(token,process.env.ACCESS_TOKEN_SECRET,(err,decoded) => {
-        if(err) {
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
           return res.status(401).send({ message: "unauthorize access" });
         }
         req.decoded = decoded;
-        next()
-      })
-    }
-
+        next();
+      });
+    };
 
     app.get("/packages", async (req, res) => {
       try {
@@ -96,17 +97,30 @@ async function run() {
         console.log(error, "error fetching tour stories");
       }
     });
-    app.get("/allStories",verifyToken, async (req, res) => {
+    app.get("/allStories", verifyToken, async (req, res) => {
       const result = await storyCollection.find().toArray();
       res.send(result);
     });
 
-    app.post("/allStories",verifyToken,async (req,res) => {
-      const story = req.body
-      const result = await storyCollection.insertOne(story)
-      res.send(result)
-    })
+    app.get("/allStories/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const result = await storyCollection.find({ email }).toArray();
+      res.send(result);
+    });
 
+    app.post("/allStories", verifyToken, async (req, res) => {
+      const story = req.body;
+      const result = await storyCollection.insertOne(story);
+      res.send(result);
+    });
+
+    app.delete("/allStories/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const result = await storyCollection.deleteOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+    //  Guides api
     app.get("/tourGuides", async (req, res) => {
       try {
         const result = await tourGuideCollection
@@ -118,22 +132,32 @@ async function run() {
       }
     });
 
+    app.get("/allTourGuides", verifyToken, async (req, res) => {
+      const result = await tourGuideCollection.find().toArray();
+      res.send(result);
+    });
+
     app.get("/tourGuides/:id", async (req, res) => {
       const { id } = req.params;
       const query = { _id: new ObjectId(id) };
       const result = await tourGuideCollection.findOne(query);
       res.send(result);
     });
+    app.get("/allTourGuides/:email", async (req, res) => {
+      const { email } = req.params;
+      
+      const result = await tourGuideCollection.findOne({email});
+      res.send(result);
+    });
 
     // User's api
-    app.get('/users/:email',verifyToken,async (req,res) => {
-      const {email} =req.params
-      const result = await userCollection.findOne({email})
-     
-      res.send(result)
-    })
+    app.get("/users/:email", verifyToken, async (req, res) => {
+      const { email } = req.params;
+      const result = await userCollection.findOne({ email });
 
-    
+      res.send(result);
+    });
+
     app.post("/users", async (req, res) => {
       const userInfo = req.body;
       const existingUser = await userCollection.findOne({
@@ -146,31 +170,52 @@ async function run() {
       res.send(result);
     });
 
-    app.patch('/users/:id',async (req,res) => {
-      const {id} = req.params
-      const query = {_id:new ObjectId(id)}
-      const updatedInfo = req.body
-      const result = await userCollection.updateOne(query,{$set:updatedInfo})
-      res.send(result)
-    })
+    app.patch("/users/:id", async (req, res) => {
+      const { id } = req.params;
+      const query = { _id: new ObjectId(id) };
+      const updatedInfo = req.body;
+      const result = await userCollection.updateOne(query, {
+        $set: updatedInfo,
+      });
+      res.send(result);
+    });
 
-    app.post('/guideApplications',async (req,res) => {
-      const applications = req.body
-      const result = await tourGuideApplications.insertOne(applications)
-      res.send(result)
-    })
+    app.post("/guideApplications", async (req, res) => {
+      const applications = req.body;
+      const result = await tourGuideApplications.insertOne(applications);
+      res.send(result);
+    });
 
     // Bookings
 
-    app.get('/bookings',verifyToken,async (req,res) => {
-      const result = await bookingCollection.find().toArray()
-      res.send(result)
-    })
-    app.post('/bookings',verifyToken,async (req,res) => {
-      const bookingsInfo = req.body
-      const result = await bookingCollection.insertOne(bookingsInfo)
-      res.send(result)
-    })
+    app.get("/bookings/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const result = await bookingCollection.find({ email }).toArray();
+      res.send(result);
+    });
+
+    app.get("/assignedTours/:id", verifyToken, async (req, res) => {
+      const { id } = req.params;
+      const result = await bookingCollection
+        .find({ tourGuideID: id })
+        .toArray();
+      res.send(result);
+    });
+
+    app.post("/bookings", verifyToken, async (req, res) => {
+      const bookingsInfo = req.body;
+      const result = await bookingCollection.insertOne(bookingsInfo);
+      res.send(result);
+    });
+
+    app.patch("/bookings/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const data = req.body
+      const result = await bookingCollection.updateOne({_id:new ObjectId(id)},{
+        $set:data
+      })
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
