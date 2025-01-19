@@ -33,6 +33,7 @@ async function run() {
       .collection("tourGuides");
     const userCollection = client.db("BanglaQuest").collection("users");
     const bookingCollection = client.db("BanglaQuest").collection("bookings");
+    const tourGuideApplications = client.db("BanglaQuest").collection("tourGuideApplications");
 
     // jwt related api
     app.post("/jwt", async (req, res) => {
@@ -59,6 +60,7 @@ async function run() {
       })
     }
 
+
     app.get("/packages", async (req, res) => {
       try {
         const result = await packageCollection
@@ -82,6 +84,8 @@ async function run() {
       res.send(result);
     });
 
+    // story api
+
     app.get("/stories", async (req, res) => {
       try {
         const result = await storyCollection
@@ -92,10 +96,16 @@ async function run() {
         console.log(error, "error fetching tour stories");
       }
     });
-    app.get("/allStories", async (req, res) => {
+    app.get("/allStories",verifyToken, async (req, res) => {
       const result = await storyCollection.find().toArray();
       res.send(result);
     });
+
+    app.post("/allStories",verifyToken,async (req,res) => {
+      const story = req.body
+      const result = await storyCollection.insertOne(story)
+      res.send(result)
+    })
 
     app.get("/tourGuides", async (req, res) => {
       try {
@@ -144,9 +154,15 @@ async function run() {
       res.send(result)
     })
 
+    app.post('/guideApplications',async (req,res) => {
+      const applications = req.body
+      const result = await tourGuideApplications.insertOne(applications)
+      res.send(result)
+    })
+
     // Bookings
 
-    app.get('/bookings',async (req,res) => {
+    app.get('/bookings',verifyToken,async (req,res) => {
       const result = await bookingCollection.find().toArray()
       res.send(result)
     })
