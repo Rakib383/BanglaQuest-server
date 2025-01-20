@@ -6,7 +6,6 @@ const port = process.env.PORT || 5000;
 var jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
-
 // middleware
 app.use(cors());
 app.use(express.json());
@@ -65,17 +64,16 @@ async function run() {
       });
     };
 
-    const verifyAdmin = async(req,res,next) => {
-      const email = req.decoded.email
-      
-      const user = await userCollection.findOne({email})
-      const isAdmin = user?.Role === "Admin"
-      if(!isAdmin) {
-        return res.status(403).send({message:"forbidden access"})
-      }
-      next()
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
 
-    }
+      const user = await userCollection.findOne({ email });
+      const isAdmin = user?.Role === "Admin";
+      if (!isAdmin) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
 
     app.get("/packages", async (req, res) => {
       try {
@@ -100,11 +98,11 @@ async function run() {
       res.send(result);
     });
 
-    app.post('/allPackages',verifyToken,verifyAdmin,async (req,res) => {
-      const package = req.body
-      const result = await packageCollection.insertOne(package)
-      res.send(result)
-    })
+    app.post("/allPackages", verifyToken, verifyAdmin, async (req, res) => {
+      const package = req.body;
+      const result = await packageCollection.insertOne(package);
+      res.send(result);
+    });
 
     // story api
 
@@ -172,6 +170,20 @@ async function run() {
     });
 
     // User's api
+    app.get("/users", verifyToken,verifyAdmin, async (req, res) => {
+      const {email} = req.query
+
+     try{
+      const query = email ? {email:{$regex:email,$options:'i'}} :{}
+      const result = await userCollection.find(query).toArray()
+      res.send(result)
+      
+     } catch (err) {
+      console.log(err)
+     }
+
+    });
+
     app.get("/users/:email", verifyToken, async (req, res) => {
       const { email } = req.params;
       const result = await userCollection.findOne({ email });
