@@ -3,12 +3,15 @@ const cors = require("cors");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
+var jwt = require("jsonwebtoken");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+
 
 // middleware
 app.use(cors());
 app.use(express.json());
-var jwt = require("jsonwebtoken");
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+
+// mongodb connection string
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster1.25zkwku.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -62,6 +65,18 @@ async function run() {
       });
     };
 
+    const verifyAdmin = async(req,res,next) => {
+      const email = req.decoded.email
+      
+      const user = await userCollection.findOne({email})
+      const isAdmin = user?.Role === "Admin"
+      if(!isAdmin) {
+        return res.status(403).send({message:"forbidden access"})
+      }
+      next()
+
+    }
+
     app.get("/packages", async (req, res) => {
       try {
         const result = await packageCollection
@@ -84,6 +99,12 @@ async function run() {
       const result = await packageCollection.findOne(query);
       res.send(result);
     });
+
+    app.post('/allPackages',verifyToken,verifyAdmin,async (req,res) => {
+      const package = req.body
+      const result = await packageCollection.insertOne(package)
+      res.send(result)
+    })
 
     // story api
 
@@ -145,8 +166,8 @@ async function run() {
     });
     app.get("/allTourGuides/:email", async (req, res) => {
       const { email } = req.params;
-      
-      const result = await tourGuideCollection.findOne({email});
+
+      const result = await tourGuideCollection.findOne({ email });
       res.send(result);
     });
 
@@ -210,10 +231,13 @@ async function run() {
 
     app.patch("/bookings/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
-      const data = req.body
-      const result = await bookingCollection.updateOne({_id:new ObjectId(id)},{
-        $set:data
-      })
+      const data = req.body;
+      const result = await bookingCollection.updateOne(
+        { _id: new ObjectId(id) },
+        {
+          $set: data,
+        }
+      );
       res.send(result);
     });
 
