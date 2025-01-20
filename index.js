@@ -170,18 +170,16 @@ async function run() {
     });
 
     // User's api
-    app.get("/users", verifyToken,verifyAdmin, async (req, res) => {
-      const {email} = req.query
+    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
+      const { email } = req.query;
 
-     try{
-      const query = email ? {email:{$regex:email,$options:'i'}} :{}
-      const result = await userCollection.find(query).toArray()
-      res.send(result)
-      
-     } catch (err) {
-      console.log(err)
-     }
-
+      try {
+        const query = email ? { email: { $regex: email, $options: "i" } } : {};
+        const result = await userCollection.find(query).toArray();
+        res.send(result);
+      } catch (err) {
+        console.log(err);
+      }
     });
 
     app.get("/users/:email", verifyToken, async (req, res) => {
@@ -213,9 +211,22 @@ async function run() {
       res.send(result);
     });
 
+    //tourGuideApplications
+    app.get("/guideApplications",verifyToken,verifyAdmin, async (req, res) => {
+     
+      const result = await tourGuideApplications.find().toArray()
+      res.send(result);
+    });
+
     app.post("/guideApplications", async (req, res) => {
       const applications = req.body;
       const result = await tourGuideApplications.insertOne(applications);
+      res.send(result);
+    });
+
+    app.delete("/guideApplications/:email",verifyToken,verifyAdmin, async (req, res) => {
+      const {email} = req.params
+      const result = await tourGuideApplications.deleteOne({applicant_email:email})
       res.send(result);
     });
 
