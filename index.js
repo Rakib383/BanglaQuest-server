@@ -30,9 +30,6 @@ async function run() {
       .db("BanglaQuest")
       .collection("allPackages");
     const storyCollection = client.db("BanglaQuest").collection("stories");
-    const tourGuideCollection = client
-      .db("BanglaQuest")
-      .collection("tourGuides");
     const userCollection = client.db("BanglaQuest").collection("users");
     const bookingCollection = client.db("BanglaQuest").collection("bookings");
     const tourGuideApplications = client
@@ -104,7 +101,7 @@ async function run() {
       res.send(result);
     });
 
-    // story api
+    // stories api
 
     app.get("/stories", async (req, res) => {
       try {
@@ -139,33 +136,33 @@ async function run() {
       res.send(result);
     });
 
-    //  Guides api
+    //  TourGuides api
+
     app.get("/tourGuides", async (req, res) => {
-      try {
-        const result = await tourGuideCollection
-          .aggregate([{ $sample: { size: 6 } }])
-          .toArray();
-        res.send(result);
-      } catch (error) {
-        console.log(error, "error fetching tourGuides");
-      }
+      const result = await userCollection
+        .aggregate([
+          {
+            $match: { Role: "Tour Guide" },
+          },
+          {
+            $sample: { size: 6 },
+          },
+        ])
+        .toArray();
+      res.send(result);
     });
 
     app.get("/allTourGuides", verifyToken, async (req, res) => {
-      const result = await tourGuideCollection.find().toArray();
+      const result = await userCollection
+        .find({ Role: "Tour Guide" })
+        .toArray();
       res.send(result);
     });
 
     app.get("/tourGuides/:id", async (req, res) => {
       const { id } = req.params;
       const query = { _id: new ObjectId(id) };
-      const result = await tourGuideCollection.findOne(query);
-      res.send(result);
-    });
-    app.get("/allTourGuides/:email", async (req, res) => {
-      const { email } = req.params;
-
-      const result = await tourGuideCollection.findOne({ email });
+      const result = await userCollection.findOne(query);
       res.send(result);
     });
 
@@ -211,12 +208,26 @@ async function run() {
       res.send(result);
     });
 
-    //tourGuideApplications
-    app.get("/guideApplications",verifyToken,verifyAdmin, async (req, res) => {
-     
-      const result = await tourGuideApplications.find().toArray()
+    app.patch("/allUsers/:email", async (req, res) => {
+      const { email } = req.params;
+      const query = { email };
+      const updatedInfo = req.body;
+      const result = await userCollection.updateOne(query, {
+        $set: updatedInfo,
+      });
       res.send(result);
     });
+
+    //tourGuideApplications
+    app.get(
+      "/guideApplications",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const result = await tourGuideApplications.find().toArray();
+        res.send(result);
+      }
+    );
 
     app.post("/guideApplications", async (req, res) => {
       const applications = req.body;
@@ -224,11 +235,16 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/guideApplications/:email",verifyToken,verifyAdmin, async (req, res) => {
-      const {email} = req.params
-      const result = await tourGuideApplications.deleteOne({applicant_email:email})
-      res.send(result);
-    });
+    app.delete(
+      "/guideApplications/:email",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const { email } = req.params;
+        const result = await tourGuideApplications.deleteOne({ email });
+        res.send(result);
+      }
+    );
 
     // Bookings
 
@@ -237,11 +253,10 @@ async function run() {
       const result = await bookingCollection.find({ email }).toArray();
       res.send(result);
     });
-
-    app.get("/assignedTours/:id", verifyToken, async (req, res) => {
-      const { id } = req.params;
+    app.get("/assignTours/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
       const result = await bookingCollection
-        .find({ tourGuideID: id })
+        .find({ tourGuideEmail: email })
         .toArray();
       res.send(result);
     });
