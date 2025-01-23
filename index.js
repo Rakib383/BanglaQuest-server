@@ -5,6 +5,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 var jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 // middleware
 app.use(cors());
@@ -253,6 +254,11 @@ async function run() {
       const result = await bookingCollection.find({ email }).toArray();
       res.send(result);
     });
+    app.get("/allBookings/:id", verifyToken, async (req, res) => {
+      const {id} = req.params;
+      const result = await bookingCollection.findOne({_id:new ObjectId(id) })
+      res.send(result);
+    });
     app.get("/assignTours/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
       const result = await bookingCollection
@@ -278,6 +284,28 @@ async function run() {
       );
       res.send(result);
     });
+
+    app.delete("/bookings/:id",async (req,res) => {
+      const {id} = req.params
+      const result = await bookingCollection.deleteOne({_id:new ObjectId(id)})
+      res.send(result)
+    })
+
+    // payment intent for stripe
+
+    app.post("/create-payment-intent",async (req,res) => {
+      const {price} = req.body;
+      const amount = parseInt(price*100)
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount:amount,
+        currency:"usd",
+        payment_method_types:["card"]
+      })
+
+      res.send({
+        clientSecret:paymentIntent.client_secret,
+      })
+    })
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
