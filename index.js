@@ -125,11 +125,40 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/allStories/edit/:id",  async (req, res) => {
+      const id = req.params.id;
+      const result = await storyCollection.findOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
     app.post("/allStories", verifyToken, async (req, res) => {
       const story = req.body;
       const result = await storyCollection.insertOne(story);
       res.send(result);
     });
+
+    app.patch("/allStories/:id",verifyToken,async (req,res) => {
+      const updatedStory = req.body
+      const {id} = req.params
+      const result = await storyCollection.updateOne({_id:new ObjectId(id)},{
+        $set:updatedStory
+      })
+      res.send(result)
+    })
+
+    app.patch("/allStories/:id/photos",verifyToken,async(req,res) => {
+      const {id} = req.params
+      const {newPhoto,removePhoto}= req.body
+      if(newPhoto) {
+        const result = await storyCollection.updateOne({_id:new ObjectId(id)},{$push:{images:newPhoto}})
+       return res.send(result)
+      }
+      const result = await storyCollection.updateOne({_id:new ObjectId(id)},{
+        $pull:{images:removePhoto}
+      })
+      res.send(result)
+     
+    })
 
     app.delete("/allStories/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
@@ -255,8 +284,8 @@ async function run() {
       res.send(result);
     });
     app.get("/allBookings/:id", verifyToken, async (req, res) => {
-      const {id} = req.params;
-      const result = await bookingCollection.findOne({_id:new ObjectId(id) })
+      const { id } = req.params;
+      const result = await bookingCollection.findOne({ _id: new ObjectId(id) });
       res.send(result);
     });
     app.get("/assignTours/:email", verifyToken, async (req, res) => {
@@ -285,27 +314,29 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/bookings/:id",async (req,res) => {
-      const {id} = req.params
-      const result = await bookingCollection.deleteOne({_id:new ObjectId(id)})
-      res.send(result)
-    })
+    app.delete("/bookings/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await bookingCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
 
     // payment intent for stripe
 
-    app.post("/create-payment-intent",async (req,res) => {
-      const {price} = req.body;
-      const amount = parseInt(price*100)
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
       const paymentIntent = await stripe.paymentIntents.create({
-        amount:amount,
-        currency:"usd",
-        payment_method_types:["card"]
-      })
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
 
       res.send({
-        clientSecret:paymentIntent.client_secret,
-      })
-    })
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
