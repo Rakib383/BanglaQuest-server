@@ -36,6 +36,9 @@ async function run() {
     const tourGuideApplications = client
       .db("BanglaQuest")
       .collection("tourGuideApplications");
+    const paymentCollection = client
+      .db("BanglaQuest")
+      .collection("payments");
 
     // jwt related api
     app.post("/jwt", async (req, res) => {
@@ -337,6 +340,29 @@ async function run() {
         clientSecret: paymentIntent.client_secret,
       });
     });
+
+    app.post("/payments",verifyToken,async (req,res) => {
+      const data = req.body
+      const result = await paymentCollection.insertOne(data)
+      res.send(result)
+    })
+
+    // admin stats
+    app.get('/adminStats',verifyToken,verifyAdmin,async (req,res) => {
+      const totalTourGuides = await userCollection.countDocuments({Role:"Tour Guide"})
+      const totalClient = await userCollection.countDocuments({Role:"Tourist"})
+      const totalPackages = await packageCollection.estimatedDocumentCount()
+      const totalStories = await storyCollection.estimatedDocumentCount()
+      const result = await paymentCollection.aggregate([{
+        $group:{
+          _id:null,
+          totalPayment:{$sum:"$amount"}
+        }
+      }]).toArray()
+
+      const payment = result.length > 0 ? result[0].totalPayment : 0;
+      res.send({totalClient,totalTourGuides,totalPackages,totalStories,payment})
+    })
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
