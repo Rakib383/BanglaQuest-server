@@ -212,6 +212,17 @@ async function run() {
       }
     });
 
+    app.get("/usersCount",verifyToken,verifyAdmin,async(req,res) => {
+      const result = await userCollection.estimatedDocumentCount()
+      res.send({count:result})
+    })
+
+    app.get("/allUsers",verifyToken,verifyAdmin,async (req,res) => {
+      const page = parseInt(req.query.page)
+      const result = await userCollection.find().skip(page*10).limit(10).toArray()
+      res.send(result);
+    })
+
     app.get("/users/:email", verifyToken, async (req, res) => {
       const { email } = req.params;
       const result = await userCollection.findOne({ email });
@@ -257,10 +268,15 @@ async function run() {
       verifyToken,
       verifyAdmin,
       async (req, res) => {
-        const result = await tourGuideApplications.find().toArray();
+        const page = parseInt(req.query.page)
+        const result = await tourGuideApplications.find().skip(page*10).limit(10).toArray();
         res.send(result);
       }
     );
+    app.get('/countCandidate',verifyToken,verifyAdmin,async (req,res) => {
+      const result = await tourGuideApplications.estimatedDocumentCount()
+      res.send({count:result})
+    })
 
     app.post("/guideApplications", async (req, res) => {
       const applications = req.body;
