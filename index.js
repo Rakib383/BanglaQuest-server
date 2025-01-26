@@ -248,7 +248,18 @@ async function run() {
       res.send({ admin });
     });
 
-    app.get("/users/:email", verifyToken, async (req, res) => {
+    app.get("/users/role/:email", async (req, res) => {
+      const { email } = req.params;
+      const query = { email: email };
+      const result = await userCollection.findOne(query);
+       if(result) {
+        return res.send({ Role: result.Role });
+       }
+       
+       res.send({Role:"user not find in database"})
+      
+    });
+    app.get("/users/:email",verifyToken, async (req, res) => {
       const { email } = req.params;
       const query = { email: email };
       const result = await userCollection.findOne(query);
@@ -379,7 +390,7 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/bookings/:id",verifyToken, async (req, res) => {
+    app.delete("/bookings/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const result = await bookingCollection.deleteOne({
         _id: new ObjectId(id),
@@ -389,7 +400,7 @@ async function run() {
 
     // payment intent for stripe
 
-    app.post("/create-payment-intent",verifyToken, async (req, res) => {
+    app.post("/create-payment-intent", verifyToken, async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
       const paymentIntent = await stripe.paymentIntents.create({
