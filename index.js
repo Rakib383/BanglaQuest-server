@@ -84,8 +84,14 @@ async function run() {
         console.log(error, "error fetching packages");
       }
     });
-    app.get("/allPackages", verifyToken, async (req, res) => {
-      const result = await packageCollection.find().toArray();
+
+    app.get("/allPackages", async (req, res) => {
+      const result = await packageCollection.find({discount:{$exists:false}}).toArray();
+
+      res.send(result);
+    });
+    app.get("/packages/discount", async (req, res) => {
+      const result = await packageCollection.find({discount:{$exists:true}}).toArray();
 
       res.send(result);
     });
