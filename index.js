@@ -74,10 +74,15 @@ async function run() {
       next();
     };
 
+    // packages api
+
     app.get("/packages", async (req, res) => {
       try {
         const result = await packageCollection
-          .aggregate([{ $sample: { size: 3 } }])
+          .aggregate([
+            { $match: { discount: { $exists: false } } },
+            { $sample: { size: 3 } },
+          ])
           .toArray();
         res.send(result);
       } catch (error) {
@@ -86,12 +91,16 @@ async function run() {
     });
 
     app.get("/allPackages", async (req, res) => {
-      const result = await packageCollection.find({discount:{$exists:false}}).toArray();
+      const result = await packageCollection
+        .find({ discount: { $exists: false } })
+        .toArray();
 
       res.send(result);
     });
     app.get("/packages/discount", async (req, res) => {
-      const result = await packageCollection.find({discount:{$exists:true}}).toArray();
+      const result = await packageCollection
+        .find({ discount: { $exists: true } })
+        .toArray();
 
       res.send(result);
     });
@@ -197,7 +206,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/allTourGuides", verifyToken, async (req, res) => {
+    app.get("/allTourGuides", async (req, res) => {
       const result = await userCollection
         .find({ Role: "Tour Guide" })
         .toArray();
@@ -258,14 +267,13 @@ async function run() {
       const { email } = req.params;
       const query = { email: email };
       const result = await userCollection.findOne(query);
-       if(result) {
+      if (result) {
         return res.send({ Role: result.Role });
-       }
-       
-       res.send({Role:"user not find in database"})
-      
+      }
+
+      res.send({ Role: "user not find in database" });
     });
-    app.get("/users/:email",verifyToken, async (req, res) => {
+    app.get("/users/:email", verifyToken, async (req, res) => {
       const { email } = req.params;
       const query = { email: email };
       const result = await userCollection.findOne(query);
