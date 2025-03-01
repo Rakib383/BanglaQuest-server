@@ -220,32 +220,31 @@ async function run() {
       res.send(result);
     });
 
-    // User's api
-    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
-      const { email } = req.query;
 
+    app.get("/users",verifyToken,verifyAdmin, async (req, res) => {
       try {
-        const query = email ? { email: { $regex: email, $options: "i" } } : {};
-        const result = await userCollection.find(query).toArray();
-        res.send(result);
-      } catch (err) {
-        console.log(err);
+        const skip = parseInt(req.query.skip) || 0;
+        const limit = parseInt(req.query.limit) || 10;
+        const email = req.query.email || "";
+        const role = req.query.role || "";
+    
+        // Build query based on provided filters
+        const query = {};
+        if (email) {
+          query.email = { $regex: email, $options: "i" };
+        }
+        if (role) {
+          query.Role = role;
+        }
+    
+        const totalCount = await userCollection.countDocuments(query);
+        const users = await userCollection.find(query).skip(skip).limit(limit).toArray();
+    
+        res.json({ totalCount, users });
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        res.status(500).json({ error: "Server error" });
       }
-    });
-
-    app.get("/usersCount", verifyToken, verifyAdmin, async (req, res) => {
-      const result = await userCollection.estimatedDocumentCount();
-      res.send({ count: result });
-    });
-
-    app.get("/allUsers", verifyToken, verifyAdmin, async (req, res) => {
-      const page = parseInt(req.query.page);
-      const result = await userCollection
-        .find()
-        .skip(page * 10)
-        .limit(10)
-        .toArray();
-      res.send(result);
     });
 
     app.get("/users/admin/:email", verifyToken, async (req, res) => {
